@@ -442,7 +442,7 @@ async function catalogSearch(term, type, limit) {
 // Server
 // ---------------------------------------------------------------------------
 
-const server = new McpServer({ name: "handleby-music", title: "HandleBy Music", version: "1.2.0" });
+const server = new McpServer({ name: "handleby-music", title: "HandleBy Music", version: "1.2.1" });
 
 const READ = { readOnlyHint: true, openWorldHint: false };
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };
@@ -840,17 +840,14 @@ server.registerTool(
   "apple_music_account_status",
   {
     title: "Apple Music API status",
-    description: "Whether the user's Apple Music account is connected, where developer tokens come from (HandleBy token service or the user's own MusicKit key), and which storefront is in use.",
+    description: "Whether the user's Apple Music account is connected, and which storefront is in use.",
     inputSchema: {},
     annotations: READ,
   },
   wrap(async () => {
-    const c = mk.getConfig();
     const u = mk.getUserState();
     const out = {
-      developerToken: mk.usesOwnKey() ? "your own MusicKit key" : `HandleBy token service (${mk.TOKEN_SERVICE})`,
-      teamId: mk.usesOwnKey() ? c.teamId : null,
-      keyId: mk.usesOwnKey() ? c.keyId : null,
+      developerToken: `HandleBy token service (${mk.TOKEN_SERVICE})`,
       accountConnected: Boolean(u?.token),
       connectedAt: u?.connectedAt || null,
       storefront: mk.getStorefront(STOREFRONT),
@@ -865,33 +862,6 @@ server.registerTool(
       }
     }
     return out;
-  })
-);
-
-server.registerTool(
-  "configure_apple_music_api",
-  {
-    title: "Use my own MusicKit key (optional)",
-    description:
-      "Optional, for Apple Developer Program members: use your own MusicKit key instead of the HandleBy token service. Saves your Team ID, Key ID and the path to the .p8 private key on this Mac, then tests the key against Apple. The key file stays where it is; only its path is saved. Not needed for normal use.",
-    inputSchema: {
-      teamId: z.string().min(10).max(10).describe("10-character Apple Developer Team ID"),
-      keyId: z.string().min(10).max(10).describe("10-character Key ID of the MusicKit key"),
-      privateKeyPath: z.string().describe("Absolute path to the AuthKey_XXXXXXXXXX.p8 file, e.g. ~/Downloads/AuthKey_ABC123DEFG.p8"),
-    },
-    annotations: WRITE,
-  },
-  wrap(async ({ teamId, keyId, privateKeyPath }) => {
-    const previous = mk.getConfig();
-    mk.saveConfig({ teamId, keyId, keyPath: privateKeyPath });
-    try {
-      await mk.api(`/v1/catalog/us/genres`, { query: { limit: 1 }, user: false });
-    } catch (e) {
-      if (previous.teamId && previous.keyId && previous.keyPath) mk.saveConfig(previous);
-      else mk.clearConfig();
-      throw e;
-    }
-    return "Your MusicKit key is saved and Apple accepted it; developer tokens are now signed locally. If the account isn't connected yet, call connect_apple_music_account.";
   })
 );
 

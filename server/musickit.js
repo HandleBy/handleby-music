@@ -1,29 +1,24 @@
 // Apple Music API (MusicKit) layer: developer tokens, one-time user sign-in, and REST
 // calls to api.music.apple.com.
 //
-// Developer tokens come from the HandleBy token service by default
-// (TOKEN_SERVICE below), which signs them with HandleBy LLC's MusicKit key. Anyone with
-// their own Apple Developer MusicKit key can use it instead with configure_apple_music_api
-// or the AM_TEAM_ID / AM_KEY_ID / AM_PRIVATE_KEY_PATH environment variables; then no
-// request goes to the token service.
+// Developer tokens come from the HandleBy token service (TOKEN_SERVICE below), which signs
+// them with HandleBy LLC's MusicKit key; no key ever lives on the user's machine. The only
+// credential this plugin stores is the Music User Token that its own sign-in page
+// (startUserAuth) receives from Apple, kept in ~/.handleby-music/.
 
-import { createPrivateKey, sign, randomBytes } from "node:crypto";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from "node:fs";
+import { randomBytes } from "node:crypto";
+import { readFileSync, writeFileSync, mkdirSync, chmodSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 const STATE_DIR = process.env.AM_STATE_DIR || join(homedir(), ".handleby-music");
-const LEGACY_DIR = join(homedir(), ".apple-music-mcp");
-const CONFIG_FILE = join(STATE_DIR, "config.json");
 const TOKEN_FILE = join(STATE_DIR, "user-token.json");
 const DEV_TOKEN_FILE = join(STATE_DIR, "developer-token.json");
 const API = "https://api.music.apple.com";
 export const TOKEN_SERVICE = process.env.AM_TOKEN_SERVICE || "https://handleby.ai/api/music/developer-token";
 const APP_NAME = "HandleBy Music";
-const APP_VERSION = "1.2.0";
-
-const clean = (v) => (v && !/^\$\{.*\}$/.test(v) ? v.trim() : "");
+const APP_VERSION = "1.2.1";
 
 function readJSON(path) {
   try {
@@ -40,63 +35,17 @@ function writePrivate(path, obj) {
 }
 
 // ---------------------------------------------------------------------------
-// Configuration (Team ID, Key ID, path to the .p8 key)
-// ---------------------------------------------------------------------------
-
-export function getConfig() {
-  const saved = readJSON(CONFIG_FILE) || readJSON(join(LEGACY_DIR, "config.json")) || {};
-  return {
-    teamId: clean(process.env.AM_TEAM_ID) || saved.teamId || "",
-    keyId: clean(process.env.AM_KEY_ID) || saved.keyId || "",
-    keyPath: clean(process.env.AM_PRIVATE_KEY_PATH) || saved.keyPath || "",
-  };
-}
-
-export const isConfigured = () => {
-  const c = getConfig();
-  return Boolean(c.teamId && c.keyId && c.keyPath);
-};
-
-export function clearConfig() {
-  writePrivate(CONFIG_FILE, {});
-  devToken = null;
-}
-
-export function saveConfig({ teamId, keyId, keyPath }) {
-  const path = keyPath.replace(/^~(?=\/)/, homedir());
-  if (!existsSync(path)) throw new Error(`No file at ${path}`);
-  const pem = readFileSync(path, "utf8");
-  if (!/BEGIN PRIVATE KEY/.test(pem)) throw new Error("That file isn't a .p8 private key.");
-  createPrivateKey(pem); // throws if malformed
-  writePrivate(CONFIG_FILE, { teamId: teamId.trim(), keyId: keyId.trim(), keyPath: path });
-  devToken = null;
-}
-
-// ---------------------------------------------------------------------------
-// Developer token (ES256 JWT)
+// Developer token (from the HandleBy token service)
 // ---------------------------------------------------------------------------
 
 let devToken = null;
 let devTokenExp = 0;
-const b64url = (buf) => Buffer.from(buf).toString("base64url");
-
-export function signDeveloperToken({ teamId, keyId, pem }, ttlSec = 30 * 86400) {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "ES256", kid: keyId, typ: "JWT" };
-  const payload = { iss: teamId, iat: now - 60, exp: now + ttlSec };
-  const data = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
-  const sig = sign("sha256", Buffer.from(data), { key: createPrivateKey(pem), dsaEncoding: "ieee-p1363" });
-  return { token: `${data}.${b64url(sig)}`, exp: payload.exp };
-}
-
-/** True when the user supplied their own MusicKit key (no token service needed). */
-export const usesOwnKey = isConfigured;
 
 async function fetchServiceToken() {
   const cached = readJSON(DEV_TOKEN_FILE);
   if (cached?.token && cached.expiresAt - Date.now() / 1000 > 86400) return cached;
   const res = await fetch(TOKEN_SERVICE, { headers: { "User-Agent": `${APP_NAME}/${APP_VERSION}` } });
-  if (!res.ok) throw new Error(`The HandleBy token service is unavailable (HTTP ${res.status}). Try again later, or set up your own MusicKit key with configure_apple_music_api.`);
+  if (!res.ok) throw new Error(`The HandleBy token service is unavailable (HTTP ${res.status}). Try again later.`);
   const body = await res.json();
   if (!body?.token || !body?.expiresAt) throw new Error("The HandleBy token service returned an unexpected response.");
   writePrivate(DEV_TOKEN_FILE, { token: body.token, expiresAt: body.expiresAt });
@@ -105,17 +54,9 @@ async function fetchServiceToken() {
 
 export async function getDeveloperToken() {
   if (devToken && devTokenExp - Date.now() / 1000 > 3600) return devToken;
-  const c = getConfig();
-  if (c.teamId && c.keyId && c.keyPath) {
-    const pem = readFileSync(c.keyPath.replace(/^~(?=\/)/, homedir()), "utf8");
-    const t = signDeveloperToken({ teamId: c.teamId, keyId: c.keyId, pem });
-    devToken = t.token;
-    devTokenExp = t.exp;
-  } else {
-    const t = await fetchServiceToken();
-    devToken = t.token;
-    devTokenExp = t.expiresAt;
-  }
+  const t = await fetchServiceToken();
+  devToken = t.token;
+  devTokenExp = t.expiresAt;
   return devToken;
 }
 
@@ -123,7 +64,7 @@ export async function getDeveloperToken() {
 // Music User Token
 // ---------------------------------------------------------------------------
 
-export const getUserState = () => readJSON(TOKEN_FILE) || readJSON(join(LEGACY_DIR, "user-token.json"));
+export const getUserState = () => readJSON(TOKEN_FILE);
 export const getStorefront = (fallback = "us") => getUserState()?.storefront || fallback;
 
 function requireUserToken() {
@@ -235,11 +176,7 @@ export async function api(path, { method = "GET", query, body, user = true } = {
     if (res.status === 401) {
       devToken = null;
       try { writePrivate(DEV_TOKEN_FILE, {}); } catch {}
-      throw new Error(
-        usesOwnKey()
-          ? `Apple rejected the developer token (401). Check the Team ID, Key ID and .p8 key, and that the key has MusicKit enabled. ${detail}`
-          : `Apple rejected the developer token (401); a fresh one will be fetched on the next try. ${detail}`
-      );
+      throw new Error(`Apple rejected the developer token (401); a fresh one will be fetched on the next try. ${detail}`);
     }
     if (res.status === 403 && user)
       throw new Error(`Apple rejected the account token (403); it may have expired. Call connect_apple_music_account to sign in again. ${detail}`);

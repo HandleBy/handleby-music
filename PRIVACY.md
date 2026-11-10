@@ -7,7 +7,7 @@ HandleBy Music is a plugin and desktop extension that lets Claude control the Mu
 ## What stays on your Mac
 
 - Commands to the Music app (playback, library, playlists, AirPlay, play counts) run locally through macOS scripting. Their results go only to Claude, as part of your conversation.
-- Your Music User Token, a cached developer token, and, if you configure one, the path to your own MusicKit key are stored in `~/.handleby-music/` with permissions limited to your user.
+- Your Music User Token, which you grant through the plugin's sign-in page, and a cached developer token are stored in `~/.handleby-music/` with permissions limited to your user.
 
 ## What goes to Apple
 
@@ -15,7 +15,7 @@ When you use account or catalog features, the plugin sends requests directly fro
 
 ## What goes to HandleBy LLC
 
-Only a request for a MusicKit developer token, sent to `handleby.ai`. The request contains no account information, no Apple ID, no Music User Token and no music data. Our host, Vercel, records standard request logs (time, IP address, user agent), which we don't combine with any other data, sell or share, and which Vercel retains under its own policy. If you configure your own MusicKit key, the plugin makes no requests to HandleBy LLC at all.
+Only a request for a MusicKit developer token, sent to `handleby.ai`. The request contains no account information, no Apple ID, no Music User Token and no music data. Our host, Vercel, records standard request logs (time, IP address, user agent), which we don't combine with any other data, sell or share, and which Vercel retains under its own policy.
 
 ## What we don't do
 

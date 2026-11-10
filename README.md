@@ -59,15 +59,11 @@ Everything the plugin runs, sends and stores:
 | Catalog search terms, only if the Apple Music API is unreachable | itunes.apple.com (Apple) | `search_catalog` fallback |
 | The Apple Music sign-in page | A page served from your Mac (localhost), open for 15 minutes; MusicKit JS comes from js-cdn.music.apple.com (Apple) | `connect_apple_music_account` |
 
-Stored on your Mac in `~/.handleby-music/` (readable only by your user): your Music User Token, the cached developer token, and, if you set one, the path to your own MusicKit key.
+Stored on your Mac in `~/.handleby-music/` (readable only by your user): your Music User Token from the sign-in page, and the cached developer token.
 
 HandleBy LLC never receives your Apple ID, your Music User Token, your library, your listening history, or anything Claude reads or writes in Apple Music. The token service logs only what Vercel logs for any web request (time, IP address, user agent). Your use of Apple Music is governed by Apple's terms and privacy policy. Full policy: [PRIVACY.md](PRIVACY.md), also at [handleby.ai/music/privacy](https://handleby.ai/music/privacy).
 
 To disconnect, delete `~/.handleby-music/` and remove the plugin. Without the stored Music User Token, the plugin can no longer reach your Apple Music account.
-
-## Using your own MusicKit key (optional)
-
-Apple Developer Program members can skip the HandleBy token service by asking Claude to "use my own MusicKit key" with their Team ID, Key ID and the path to their `.p8` file (`configure_apple_music_api`), or by setting `AM_TEAM_ID`, `AM_KEY_ID` and `AM_PRIVATE_KEY_PATH`. Tokens are then signed on your Mac and nothing goes to HandleBy LLC.
 
 ## Limits
 
