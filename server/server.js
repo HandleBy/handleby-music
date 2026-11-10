@@ -14,9 +14,9 @@ import { execFile } from "node:child_process";
 import { McpServer, z } from "./mcp.js";
 import * as mk from "./musickit.js";
 
-const OSASCRIPT = process.env.AM_OSASCRIPT || "osascript";
-const OPEN = process.env.AM_OPEN || "open";
-const STOREFRONT = (process.env.AM_STOREFRONT || "us").toLowerCase();
+const OSASCRIPT = "/usr/bin/osascript";
+const OPEN = "/usr/bin/open";
+const STOREFRONT = "us"; // default until the user's own storefront is known from sign-in
 const LIBRARY_TTL_MS = 10 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
@@ -442,7 +442,7 @@ async function catalogSearch(term, type, limit) {
 // Server
 // ---------------------------------------------------------------------------
 
-const server = new McpServer({ name: "handleby-music", title: "HandleBy Music", version: "1.2.1" });
+const server = new McpServer({ name: "handleby-music", title: "HandleBy Music", version: "1.2.2" });
 
 const READ = { readOnlyHint: true, openWorldHint: false };
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };

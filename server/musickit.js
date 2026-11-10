@@ -12,13 +12,13 @@ import { createServer } from "node:http";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const STATE_DIR = process.env.AM_STATE_DIR || join(homedir(), ".handleby-music");
+const STATE_DIR = join(homedir(), ".handleby-music");
 const TOKEN_FILE = join(STATE_DIR, "user-token.json");
 const DEV_TOKEN_FILE = join(STATE_DIR, "developer-token.json");
 const API = "https://api.music.apple.com";
-export const TOKEN_SERVICE = process.env.AM_TOKEN_SERVICE || "https://handleby.ai/api/music/developer-token";
+export const TOKEN_SERVICE = "https://handleby.ai/api/music/developer-token";
 const APP_NAME = "HandleBy Music";
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.2.2";
 
 function readJSON(path) {
   try {
