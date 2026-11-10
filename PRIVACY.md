@@ -7,7 +7,7 @@ HandleBy Music is a plugin and desktop extension that lets Claude control the Mu
 ## What stays on your Mac
 
 - Commands to the Music app (playback, library, playlists, AirPlay, play counts) run locally through macOS scripting. Their results go only to Claude, as part of your conversation.
-- Your Music User Token, which you grant through the plugin's sign-in page, and a cached developer token are stored in `~/.handleby-music/` with permissions limited to your user.
+- Your Music User Token, which you grant through the plugin's sign-in page, is stored in `~/.handleby-music/` with permissions limited to your user.
 
 ## What goes to Apple
 

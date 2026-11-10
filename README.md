@@ -54,12 +54,12 @@ Everything the plugin runs, sends and stores:
 | --- | --- | --- |
 | AppleScript / JavaScript for Automation commands to the Music app (`osascript`) | Stays on your Mac | Playback, library, playlist, AirPlay and play-count tools |
 | `open music://…` to show an Apple Music page in the Music app | Stays on your Mac | `open_in_music`, and as a fallback in `play_catalog_song` |
-| A request for a developer token (no personal data, no identifiers beyond a `User-Agent` of `HandleBy-Music/<version>`) | handleby.ai (HandleBy LLC), path `/api/music/developer-token` | When an Apple Music API call needs a token; cached on your Mac for up to 30 days |
+| A request for a developer token (no personal data, no identifiers beyond a `User-Agent` of `HandleBy-Music/<version>`) | handleby.ai (HandleBy LLC), path `/api/music/developer-token` | When an Apple Music API call needs a token; kept in memory while the plugin runs |
 | Apple Music API requests with the developer token and your Music User Token (search terms, song and playlist IDs, playlist names and descriptions you ask Claude to create) | api.music.apple.com (Apple) | Account and catalog tools |
 | Catalog search terms, only if the Apple Music API is unreachable | itunes.apple.com (Apple) | `search_catalog` fallback |
 | The Apple Music sign-in page | A page served from your Mac (localhost), open for 15 minutes; MusicKit JS comes from js-cdn.music.apple.com (Apple) | `connect_apple_music_account` |
 
-Stored on your Mac in `~/.handleby-music/` (readable only by your user): your Music User Token from the sign-in page, and the cached developer token.
+Stored on your Mac in `~/.handleby-music/` (readable only by your user): your Music User Token from the sign-in page. Developer tokens are kept in memory only.
 
 HandleBy LLC never receives your Apple ID, your Music User Token, your library, your listening history, or anything Claude reads or writes in Apple Music. The token service logs only what Vercel logs for any web request (time, IP address, user agent). Your use of Apple Music is governed by Apple's terms and privacy policy. Full policy: [PRIVACY.md](PRIVACY.md), also at [handleby.ai/music/privacy](https://handleby.ai/music/privacy).
 

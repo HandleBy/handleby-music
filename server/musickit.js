@@ -14,11 +14,10 @@ import { join } from "node:path";
 
 const STATE_DIR = join(homedir(), ".handleby-music");
 const TOKEN_FILE = join(STATE_DIR, "user-token.json");
-const DEV_TOKEN_FILE = join(STATE_DIR, "developer-token.json");
 const API = "https://api.music.apple.com";
 export const TOKEN_SERVICE = "https://handleby.ai/api/music/developer-token";
 const APP_NAME = "HandleBy Music";
-const APP_VERSION = "1.2.2";
+const APP_VERSION = "1.2.3";
 
 function readJSON(path) {
   try {
@@ -42,13 +41,11 @@ let devToken = null;
 let devTokenExp = 0;
 
 async function fetchServiceToken() {
-  const cached = readJSON(DEV_TOKEN_FILE);
-  if (cached?.token && cached.expiresAt - Date.now() / 1000 > 86400) return cached;
+  // Kept in memory only; the token service and its CDN make a fresh fetch cheap.
   const res = await fetch(TOKEN_SERVICE, { headers: { "User-Agent": `${APP_NAME}/${APP_VERSION}` } });
   if (!res.ok) throw new Error(`The HandleBy token service is unavailable (HTTP ${res.status}). Try again later.`);
   const body = await res.json();
   if (!body?.token || !body?.expiresAt) throw new Error("The HandleBy token service returned an unexpected response.");
-  writePrivate(DEV_TOKEN_FILE, { token: body.token, expiresAt: body.expiresAt });
   return body;
 }
 
@@ -175,7 +172,6 @@ export async function api(path, { method = "GET", query, body, user = true } = {
     const detail = json?.errors?.map((e) => e.detail || e.title).filter(Boolean).join("; ") || text.slice(0, 300);
     if (res.status === 401) {
       devToken = null;
-      try { writePrivate(DEV_TOKEN_FILE, {}); } catch {}
       throw new Error(`Apple rejected the developer token (401); a fresh one will be fetched on the next try. ${detail}`);
     }
     if (res.status === 403 && user)

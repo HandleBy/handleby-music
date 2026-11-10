@@ -442,7 +442,7 @@ async function catalogSearch(term, type, limit) {
 // Server
 // ---------------------------------------------------------------------------
 
-const server = new McpServer({ name: "handleby-music", title: "HandleBy Music", version: "1.2.2" });
+const server = new McpServer({ name: "handleby-music", title: "HandleBy Music", version: "1.2.3" });
 
 const READ = { readOnlyHint: true, openWorldHint: false };
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };
